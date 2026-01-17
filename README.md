@@ -509,12 +509,376 @@ Once the floorplan is loaded in **Magic**, you can interact with and inspect dif
 - Ensure the design is fully loaded before interaction.
 - `what` shows cell name, layer, and coordinates.
 
+check equidistant pins:
+<img width="1920" height="923" alt="mla2" src="https://github.com/user-attachments/assets/a1bee816-ce71-4808-af04-89cc657cd284" />
+see the diagonal placement of cells inside:
+<img width="1920" height="923" alt="w6 magic diagnol" src="https://github.com/user-attachments/assets/a53013a0-2ff5-4b57-acb2-130cd91f8b19" />
+see the standard library:
+<img width="1920" height="923" alt="mla3" src="https://github.com/user-attachments/assets/d3ddec25-b482-4101-ab51-8e279e7e9a97" />
+
+## Placement
+
+### 1. Binding Netlist with Physical Cells
+
+After floorplanning, the next step is **placement**, where the logical netlist is **mapped to physical cells** from the standard cell library.
+
+i.Before placement
+ <img width="1205" height="1000" alt="Before Placement" src="https://github.com/user-attachments/assets/692157b6-a4c4-4aae-bf01-7c2182940e85" />
+ ii.After placement
+  <img width="1492" height="987" alt="After Placement" src="https://github.com/user-attachments/assets/14f71495-9c5b-4de9-ba20-fedbaaed4a90" />
+
+In real silicon, logic gates have **physical shapes** with defined width and height.
+
+These gates are stored in a **standard cell library**, which provides:
+
+- **Shape and Size** – Physical dimensions of each cell  
+- **Timing** – Propagation delay characteristics  
+- **Power** – Power consumption data  
+- **Area** – Silicon area occupied  
+- **Operating Conditions** – Voltage, temperature, and process limits
+
+<img width="1825" height="456" alt="image" src="https://github.com/user-attachments/assets/6cbffb00-e862-44e7-8f3f-8a32ab4727fb" />
+
+
+###  2. Cell Placement
+
+During **placement**, the tool takes all physical cells from the library and places them into the **floorplan region** according to connectivity and timing requirements.
+
+<img width="1894" height="744" alt="image" src="https://github.com/user-attachments/assets/47b36a1b-a951-46a7-a669-5d67d6599a7a" />
+
+- The placement step determines **exact locations** of standard cells inside the chip core.  
+- **Pre-placed IPs (macros)** are already fixed in the floorplan, so **no standard cells** should be placed near or overlap them.  
+
+  <img width="1898" height="914" alt="image" src="https://github.com/user-attachments/assets/c5ccb39f-4df1-4c48-8bac-c1fa033b9248" />
+
+## 3. Optimize Placement
+
+Placement optimization improves **timing**, reduces **wire length**, and minimizes **congestion** while preserving signal integrity.
+
+- **Wire Length Estimation**  
+  The placement tool estimates wire lengths between connected cells.  
+  Shorter wires reduce delay and routing complexity.
+
+- **Resistance and Capacitance**  
+  Longer wires increase **resistance (R)** and **capacitance (C)**.  
+  Higher R and C degrade signal quality and timing.  
+
+  Wire resistance is given by:  
+  `R = ρ × (L / A)`
+
+  where:  
+  - `ρ` = material resistivity  
+  - `L` = wire length  
+  - `A` = cross-sectional area  
+
+- **Signal Integrity and Repeaters**  
+  Long interconnects weaken signals.  
+  **Repeaters (buffers)** are inserted to restore signal strength.  
+  Repeaters improve integrity but consume extra silicon area.
+
+- **Slew (Transition Time)**  
+  Slew depends on **load capacitance**.  
+  Higher capacitance causes slower signal transitions.  
+  Slow transitions can violate timing constraints.
+
+### Optimization Goals
+
+Placement optimization ensures:
+- **Optimal wire length**
+- **Minimal routing congestion**
+- **Improved timing performance**
+- **Better signal integrity**
+
+### Timing Analysis
+
+After placement optimization:
+- **Data paths** are analyzed for timing closure.
+- The **clock is treated as ideal** with zero skew.
+- **Setup timing** is checked against design specifications.
+- Signal arrival times are verified to confirm correct placement.
+
+<img width="1895" height="925" alt="image" src="https://github.com/user-attachments/assets/57bb14e5-f011-4c83-a0a9-8b69aa612f8c" />
+
+> Placement optimization adjusts cell locations to balance **area**, **timing**, and **signal quality**.  
+It prepares the design for **clock tree synthesis** and **routing**.
+
+**Library characterization and modeling** are the foundation of the ASIC flow.  
+Each standard cell is modeled for **timing**, **power**, and **area**.  
+Models are defined across **process, voltage, and temperature (PVT)** conditions.
+
+### Design Flow Stages Using the Same Cells
+
+1. **Logic Synthesis**  
+   Converts RTL into a gate-level netlist using standard cells.
+
+2. **Floorplanning**  
+   Defines chip area, power grid, and macro placement.
+
+3. **Placement**  
+   Positions all standard cells within the floorplan.
+
+4. **Clock Tree Synthesis (CTS)**  
+   Distributes the clock evenly to all flip-flops.
+
+5. **Routing**  
+   Connects all cells according to logical nets.
+
+6. **Static Timing Analysis (STA)**  
+   Checks timing constraints and validates performance.
+
+>  All these stages use the **same standard cells** characterized in the technology library.
+
+# Placement in OpenLANE
+
+### 1. Global Placement
+
+- Performs a **coarse placement** of standard cells.
+- Targets **wire length reduction** and better connectivity.
+- No **legalization** is performed at this stage.
+- OpenLane uses **Half-Perimeter Wire Length (HPWL)** for optimization.
+
+### 2. Detailed Placement
+
+- Refines results from global placement.
+- Aligns standard cells within defined **rows**.
+- Eliminates **cell overlaps**.
+- Produces a legal, manufacturable layout.
+
+> go to the docker in openlane and enter interactive mode and do the design prep and then after synthesis do this
+
+` 
+  run_placement
+  `
+
+<img width="1920" height="923" alt="w6-pl1" src="https://github.com/user-attachments/assets/f18b9d55-9f00-40c7-b03e-92722f90a67f" />
+<img width="1920" height="923" alt="w6-pl2" src="https://github.com/user-attachments/assets/159917b0-6700-4ce5-8f48-a6dc5ba82e65" />
+
+The command to open result after running run_placement is 
+```
+cd /work/tools/openlane_working_dir/openlane/designs/picorv32a/runs/31-10_09-36/results/placement
+ magic -T /home/vsduser/Desktop/work/tools/openlane_working_dir/pdks/sky130A/libs.tech/magic/sky130A.tech lef read ../../tmp/merged.lef  def read picorv32a.placement.def &
+```
+
+And the result is
+<img width="1920" height="923" alt="w6-pl3" src="https://github.com/user-attachments/assets/0584b8d7-bef3-45d4-a5f4-fadd414f0c51" />
+
+
+- standard cells are overlaped
+
+<img width="1920" height="923" alt="w6-pl4" src="https://github.com/user-attachments/assets/59ccfeeb-5397-4b6b-bb00-6e642c805caf" />
+
+## Standard Cell Design
+
+A **standard cell** is a basic building block in digital IC design.  
+The standard cell design flow ensures each cell is verified and ready for synthesis and physical design.
+
+### Standard Cell Design Flow
+
+The flow consists of **three main elements**.
+
+### Inputs
+
+These resources are required to begin standard cell design:
+
+- **PDKs (Process Design Kits)**  
+  Provide technology-specific rules and parameters.
+
+- **DRC & LVS Rules**  
+  Define layout and verification constraints.
+
+- **SPICE Models**  
+  Describe electrical behavior of devices.
+
+- **Library and User Specifications**  
+  Define timing, power, and area targets.
+
+### Design Steps
+
+Core steps in standard cell creation:
+
+- **Circuit Design**  
+  Create the transistor-level schematic.
+
+- **Layout Design**  
+  Draw physical geometry following DRC and LVS rules.
+
+- **Characterization**  
+  Measure timing, power, and area across operating conditions.
+
+### Outputs
+
+The standard cell design flow produces:
+
+- **CDL (Circuit Description Language)**  
+  Describes the transistor-level circuit.
+
+- **GDSII**  
+  Final physical layout for fabrication.
+
+- **LEF (Library Exchange Format)**  
+  Abstract physical view for placement and floorplanning.
+
+- **Extracted SPICE Netlist (.crc)**  
+  Includes parasitic effects for accurate analysis.
+
+---
+
+## Standard Cell Characterization Flow
+
+**Characterization** models standard cell behavior under different electrical conditions.  
+It generates data for **timing**, **power**, and **noise** analysis.
+
+### Standard Characterization Steps
+
+1. **Read Model Files**  
+   Load transistor and device models from the PDK.
+
+2. **Read Extracted SPICE Netlist**  
+   Import the post-layout netlist with parasitics.
+
+3. **Identify Circuit Behavior**  
+   Define logic function and pin roles.
+
+4. **Read Subcircuits**  
+   Include all referenced dependent subcircuits.
+
+5. **Attach Power Sources**  
+   Connect **VDD** and **VSS** rails.
+
+6. **Apply Stimulus**  
+   Apply input transitions for testing.
+
+7. **Add Output Capacitances**  
+   Model real interconnect and fan-out loads.
+
+8. **Run Simulations**  
+   Measure delay, slew, power, and noise.
+
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/ec2e78d9-d9c1-4b3c-91bd-04df204bbe52" alt="GUNA Input Setup" width="48%"/>
+  <img src="https://github.com/user-attachments/assets/01165e93-608f-44c1-a7cf-1ef28fd21aa0" alt="GUNA Output Results" width="48%"/>
+</p>
+
+
+After completing all the setup and simulation steps,  
+**all the generated files** (model files, extracted SPICE netlist, subcircuits, stimulus, and simulation scripts)  
+are provided as **inputs to the GUNA characterization software**.
+
+GUNA uses these inputs to:
+- Perform **timing**, **power**, and **noise** characterization.  
+- Generate **.lib (timing library)** files used in synthesis and static timing analysis.
+
+<img width="1756" height="668" alt="image" src="https://github.com/user-attachments/assets/312f5dd2-56f1-4549-b527-5609cdf8723c" />
+
+## Timing Characterization 
+
+| Parameter | Description | Typical Value |
+|------------|--------------|----------------|
+| **Slew low rise threshold** | Voltage level where rising transition starts (low reference) | 20% of swing |
+| **Slew high rise threshold** | Voltage level where rising transition ends (high reference) | 80% of swing |
+| **Slew low fall threshold** | Voltage level where falling transition ends (low reference) | 20% of swing |
+| **Slew high fall threshold** | Voltage level where falling transition starts (high reference) | 80% of swing |
+| **Input rise threshold** | Input voltage reference for rise delay | 50% |
+| **Input fall threshold** | Input voltage reference for fall delay | 50% |
+| **Output rise threshold** | Output voltage reference for rise delay | 50% |
+| **Output fall threshold** | Output voltage reference for fall delay | 50% |
+
+> Percentages are relative to the **actual low and high voltages** of each transition.
+
+
+### 1. Propagation Delay (`tpd`)
+
+Time difference between when the **input** signal crosses its 50% level and when the **output** signal crosses its 50% level.
+
+Propagation delay (rise):
+t_pd,rise = t_out,50 - t_in,50
+
+Propagation delay (fall):
+t_pd,fall = t_out,50 - t_in,50
+
+### 2. Transition Time / Slew
+
+Duration for a signal to transition between two threshold points.
+
+#### For Rising Edge:
+
+Rise time:
+t_rise = t_80 - t_20
+
+Fall time:
+t_fall = |t_80 - t_20|
+
+These are also referred to as **input slew** or **output slew**, depending on which pin the waveform corresponds to.
+
+# Day-3 - Design and characterize one library cell using Magic Layout tool and ngspice
+
+## Modifying the Flow & Re-Running Floorplan
+
+If any changes are made to the flow — for example, adjusting the **input and output port spacing** —  
+you can update the configuration in the shell and **re-run the floorplan** command to observe the new I/O pin alignment.
+
+
+```
+set ::env(FP_IO_MODE) 2
+run_floorplan
+```
+To see how I/O pins are aligned after changing the value in ioPlacer,this is new mode of placement of io pins. 
+
+<img width="960" alt="reset" src="https://user-images.githubusercontent.com/64173714/215265586-4619331d-3f95-4573-9765-2c9d07226e55.png">
+
+## SPICE Simulations (Pre-Layout)
+
+SPICE simulations help verify the **functional** and **static behavior** of a circuit **before layout**.  
+They are an essential step in validating circuit performance at the transistor level.
+
+### SPICE Deck
+- Defines the **circuit connectivity**, **component values**, and **node names**.  
+- Acts as the input file for SPICE simulation.  
+- Includes details such as voltage sources, resistors, capacitors, and transistors.
+
+### NGSPICE 
+- **NGSPICE** is an open-source circuit simulator used for **analog** and **mixed-signal** analysis.  
+- It interprets the SPICE deck to perform simulations like DC, AC, and transient analysis.
+
+### Static Behavior Evaluation
+- Determines the **DC operating points**, **logic voltage levels**, and **steady-state conditions**.  
+- Helps confirm the circuit’s correct operation before applying dynamic or transient signals.
 
 
 
+## SPICE Simulation Lab for CMOS Inverter
 
+This lab demonstrates how to perform a **SPICE simulation** for a CMOS inverter using the **Sky130 PDK** and **Magic** layout tool.
 
+### Step 1: Clone the Standard Cell Repository
 
+Use the following commands to clone the standard cell design repository and navigate into it:
+
+```bash
+git clone https://github.com/nickson-jose/vsdstdcelldesign.git
+cd vsdstdcelldesign
+```
+### Step 2: Prepare the Magic Technology File
+
+Before opening the layout in Magic, you need the technology file `(sky130A.tech)`.
+
+Navigate to the tech file location and copy it into your vsdstdcelldesign directory:
+Do this to get vsdstdcelldesign file into your openlane directory
+  
+```
+cp /home/vsduser/Desktop/work/tools/openlane_working_dir/pdks/sky130A/libs.tech/magic/sky130A.tech \
+/home/vsduser/Desktop/work/tools/openlane_working_dir/openlane/vsdstdcelldesign
+```
+Step 3: Open the Layout in Magic
+
+Use the following command to open the CMOS inverter layout (sky130_inv.mag) in Magic:
+
+```
+magic -T sky130A.tech sky130_inv.mag &
+```
+
+<img width="1920" height="923" alt="w6-inv" src="https://github.com/user-attachments/assets/8174055b-50cf-4317-9e69-cfda8fc82c18" />
 
 
 
